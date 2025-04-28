@@ -9601,7 +9601,7 @@
           "start",
           "pause",
           "resume",
-          "empty",
+          "clear",
           "clear-failed"
         ],
         "type": "string"
@@ -9629,16 +9629,10 @@
           "active": {
             "type": "integer"
           },
-          "completed": {
-            "type": "integer"
-          },
           "delayed": {
             "type": "integer"
           },
           "failed": {
-            "type": "integer"
-          },
-          "paused": {
             "type": "integer"
           },
           "waiting": {
@@ -9647,10 +9641,8 @@
         },
         "required": [
           "active",
-          "completed",
           "delayed",
           "failed",
-          "paused",
           "waiting"
         ],
         "type": "object"
@@ -10864,16 +10856,12 @@
       },
       "QueueStatusDto": {
         "properties": {
-          "isActive": {
-            "type": "boolean"
-          },
-          "isPaused": {
+          "paused": {
             "type": "boolean"
           }
         },
         "required": [
-          "isActive",
-          "isPaused"
+          "paused"
         ],
         "type": "object"
       },

@@ -542,10 +542,8 @@ describe(PersonService.name, () => {
       mocks.job.getJobCounts.mockResolvedValue({
         active: 1,
         waiting: 0,
-        paused: 0,
-        completed: 0,
-        failed: 0,
         delayed: 0,
+        failed: 0,
       });
       mocks.systemMetadata.get.mockResolvedValue(systemConfigStub.machineLearningDisabled);
 
@@ -559,10 +557,8 @@ describe(PersonService.name, () => {
       mocks.job.getJobCounts.mockResolvedValue({
         active: 1,
         waiting: 1,
-        paused: 0,
-        completed: 0,
-        failed: 0,
         delayed: 0,
+        failed: 0,
       });
 
       await expect(sut.handleQueueRecognizeFaces({})).resolves.toBe(JobStatus.SKIPPED);
@@ -574,10 +570,8 @@ describe(PersonService.name, () => {
       mocks.job.getJobCounts.mockResolvedValue({
         active: 1,
         waiting: 0,
-        paused: 0,
-        completed: 0,
-        failed: 0,
         delayed: 0,
+        failed: 0,
       });
       mocks.person.getAllFaces.mockReturnValue(makeStream([faceStub.face1]));
       mocks.person.getAllWithoutFaces.mockResolvedValue([]);
@@ -603,10 +597,8 @@ describe(PersonService.name, () => {
       mocks.job.getJobCounts.mockResolvedValue({
         active: 1,
         waiting: 0,
-        paused: 0,
-        completed: 0,
-        failed: 0,
         delayed: 0,
+        failed: 0,
       });
       mocks.person.getAll.mockReturnValue(makeStream());
       mocks.person.getAllFaces.mockReturnValue(makeStream([faceStub.face1]));
@@ -632,10 +624,8 @@ describe(PersonService.name, () => {
       mocks.job.getJobCounts.mockResolvedValue({
         active: 1,
         waiting: 0,
-        paused: 0,
-        completed: 0,
-        failed: 0,
         delayed: 0,
+        failed: 0,
       });
       mocks.person.getAll.mockReturnValue(makeStream());
       mocks.person.getAllFaces.mockReturnValue(makeStream([faceStub.face1]));
@@ -679,10 +669,8 @@ describe(PersonService.name, () => {
       mocks.job.getJobCounts.mockResolvedValue({
         active: 1,
         waiting: 0,
-        paused: 0,
-        completed: 0,
-        failed: 0,
         delayed: 0,
+        failed: 0,
       });
       mocks.person.getAll.mockReturnValue(makeStream([faceStub.face1.person, personStub.randomPerson]));
       mocks.person.getAllFaces.mockReturnValue(makeStream([faceStub.face1]));

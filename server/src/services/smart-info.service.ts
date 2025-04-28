@@ -38,6 +38,7 @@ export class SmartInfoService extends BaseService {
       return;
     }
 
+    // todo: https://github.com/immich-app/immich/pull/17885
     await this.databaseRepository.withLock(DatabaseLock.CLIPDimSize, async () => {
       const { dimSize } = getCLIPModelInfo(newConfig.machineLearning.clip.modelName);
       const dbDimSize = await this.searchRepository.getDimensionSize();
@@ -50,12 +51,6 @@ export class SmartInfoService extends BaseService {
         return;
       }
 
-      const { isPaused } = await this.jobRepository.getQueueStatus(QueueName.SMART_SEARCH);
-      if (!isPaused) {
-        await this.jobRepository.pause(QueueName.SMART_SEARCH);
-      }
-      await this.jobRepository.waitForQueueCompletion(QueueName.SMART_SEARCH);
-
       if (dimSizeChange) {
         this.logger.log(
           `Dimension size of model ${newConfig.machineLearning.clip.modelName} is ${dimSize}, but database expects ${dbDimSize}.`,
@@ -65,10 +60,6 @@ export class SmartInfoService extends BaseService {
         this.logger.log(`Successfully updated database CLIP dimension size from ${dbDimSize} to ${dimSize}.`);
       } else {
         await this.searchRepository.deleteAllSearchEmbeddings();
-      }
-
-      if (!isPaused) {
-        await this.jobRepository.resume(QueueName.SMART_SEARCH);
       }
     });
   }
