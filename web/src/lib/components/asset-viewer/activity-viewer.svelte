@@ -1,32 +1,32 @@
 <script lang="ts">
+  import { autoGrowHeight } from '$lib/actions/autogrow';
+  import { shortcut } from '$lib/actions/shortcut';
   import Icon from '$lib/components/elements/icon.svelte';
+  import ButtonContextMenu from '$lib/components/shared-components/context-menu/button-context-menu.svelte';
+  import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
   import { AppRoute, timeBeforeShowLoadingSpinner } from '$lib/constants';
+  import { activityManager } from '$lib/managers/activity-manager.svelte';
+  import { locale } from '$lib/stores/preferences.store';
   import { getAssetThumbnailUrl, handlePromiseError } from '$lib/utils';
   import { getAssetType } from '$lib/utils/asset-utils';
-  import { autoGrowHeight } from '$lib/actions/autogrow';
   import { handleError } from '$lib/utils/handle-error';
   import { isTenMinutesApart } from '$lib/utils/timesince';
   import {
     ReactionType,
     createActivity,
     deleteActivity,
-    getActivities,
     type ActivityResponseDto,
     type AssetTypeEnum,
     type UserResponseDto,
   } from '@immich/sdk';
-  import { mdiClose, mdiDotsVertical, mdiHeart, mdiSend, mdiDeleteOutline } from '@mdi/js';
+  import { mdiClose, mdiDeleteOutline, mdiDotsVertical, mdiHeart, mdiSend } from '@mdi/js';
   import * as luxon from 'luxon';
-  import { onMount } from 'svelte';
+  import { onDestroy, onMount } from 'svelte';
+  import { t } from 'svelte-i18n';
   import CircleIconButton from '../elements/buttons/circle-icon-button.svelte';
   import LoadingSpinner from '../shared-components/loading-spinner.svelte';
   import { NotificationType, notificationController } from '../shared-components/notification/notification';
   import UserAvatar from '../shared-components/user-avatar.svelte';
-  import { locale } from '$lib/stores/preferences.store';
-  import { shortcut } from '$lib/actions/shortcut';
-  import { t } from 'svelte-i18n';
-  import ButtonContextMenu from '$lib/components/shared-components/context-menu/button-context-menu.svelte';
-  import MenuOption from '$lib/components/shared-components/context-menu/menu-option.svelte';
 
   const units: Intl.RelativeTimeFormatUnit[] = ['year', 'month', 'week', 'day', 'hour', 'minute', 'second'];
 
@@ -48,7 +48,6 @@
   };
 
   interface Props {
-    reactions: ActivityResponseDto[];
     user: UserResponseDto;
     assetId?: string | undefined;
     albumId: string;
@@ -56,14 +55,13 @@
     albumOwnerId: string;
     disabled: boolean;
     isLiked: ActivityResponseDto | null;
-    onDeleteComment: () => void;
-    onDeleteLike: () => void;
-    onAddComment: () => void;
+    onDeleteComment?: () => void;
+    onDeleteLike?: () => void;
+    onAddComment?: () => void;
     onClose: () => void;
   }
 
   let {
-    reactions = $bindable(),
     user,
     assetId = undefined,
     albumId,
@@ -71,9 +69,9 @@
     albumOwnerId,
     disabled,
     isLiked,
-    onDeleteComment,
-    onDeleteLike,
-    onAddComment,
+    onDeleteComment = () => {},
+    onDeleteLike = () => {},
+    onAddComment = () => {},
     onClose,
   }: Props = $props();
 
@@ -87,11 +85,16 @@
 
   onMount(async () => {
     await getReactions();
+    activityManager.init(albumId, assetId);
+  });
+
+  onDestroy(() => {
+    activityManager.reset();
   });
 
   const getReactions = async () => {
     try {
-      reactions = await getActivities({ assetId, albumId });
+      await activityManager.updateActivities(albumId, assetId);
     } catch (error) {
       handleError(error, $t('errors.unable_to_load_asset_activity'));
     }
@@ -109,7 +112,7 @@
   const handleDeleteReaction = async (reaction: ActivityResponseDto, index: number) => {
     try {
       await deleteActivity({ id: reaction.id });
-      reactions.splice(index, 1);
+      activityManager.activities = activityManager.activities.splice(index, 1);
       if (isLiked && reaction.type === ReactionType.Like && reaction.id == isLiked.id) {
         onDeleteLike();
       } else {
@@ -138,7 +141,7 @@
       const data = await createActivity({
         activityCreateDto: { albumId, assetId, type: ReactionType.Comment, comment: message },
       });
-      reactions.push(data);
+      activityManager.activities = [...activityManager.activities, data];
 
       message = '';
       onAddComment();
@@ -184,7 +187,7 @@
         class="overflow-y-auto immich-scrollbar relative w-full px-2"
         style="height: {divHeight}px;padding-bottom: {chatHeight}px"
       >
-        {#each reactions as reaction, index (reaction.id)}
+        {#each activityManager.activities as reaction, index (reaction.id)}
           {#if reaction.type === ReactionType.Comment}
             <div class="flex dark:bg-gray-800 bg-gray-200 py-3 ps-3 mt-3 rounded-lg gap-4 justify-start">
               <div class="flex items-center">
@@ -221,7 +224,7 @@
               {/if}
             </div>
 
-            {#if (index != reactions.length - 1 && !shouldGroup(reactions[index].createdAt, reactions[index + 1].createdAt)) || index === reactions.length - 1}
+            {#if (index != activityManager.activities.length - 1 && !shouldGroup(activityManager.activities[index].createdAt, activityManager.activities[index + 1].createdAt)) || index === activityManager.activities.length - 1}
               <div
                 class="pt-1 px-2 text-right w-full text-sm text-gray-500 dark:text-gray-300"
                 title={new Date(reaction.createdAt).toLocaleDateString(undefined, timeOptions)}
@@ -273,7 +276,7 @@
                   </div>
                 {/if}
               </div>
-              {#if (index != reactions.length - 1 && isTenMinutesApart(reactions[index].createdAt, reactions[index + 1].createdAt)) || index === reactions.length - 1}
+              {#if (index != activityManager.activities.length - 1 && isTenMinutesApart(activityManager.activities[index].createdAt, activityManager.activities[index + 1].createdAt)) || index === activityManager.activities.length - 1}
                 <div
                   class="pt-1 px-2 text-right w-full text-sm text-gray-500 dark:text-gray-300"
                   title={new Date(reaction.createdAt).toLocaleDateString(navigator.language, timeOptions)}
